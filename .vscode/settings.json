@@ -1,0 +1,20 @@
+{
+  "files.associations": {
+    "*.h": "cpp", 
+    "*.hpp": "cpp"
+  },
+  "editor.semanticHighlighting.enabled": true,
+  "C_Cpp.intelliSenseEngine": "disabled",
+  
+  // Improves clangd behavior
+  "clangd.arguments": [
+    "--compile-commands-dir=.",
+    "--header-insertion=never",
+    "--completion-style=detailed",
+    "--background-index", // Project-wide awareness, but can be slow on large projects.
+  ],
+  "clangd.fallbackFlags": [
+    "-std=c++17",
+    "-Iinclude"
+  ]
+}
