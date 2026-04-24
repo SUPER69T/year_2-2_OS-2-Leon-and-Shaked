@@ -1,25 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include "funcs.h"
 
-char* readline() { // RE-READ THIS CODE AGAIN.
+char* readline() { 
     int size = 1024;
     int len = 0;
-    char* str = malloc(size * sizeof(char));
-    int c; // getchar() returns an unsigned char.
+    char* str = malloc(size * sizeof(char)); // =>
+    // here malloc() allocates a modifiable character array on the heap. =>
+    // this is going to be useful for parse() in order to tokanize 'cmdLine'.
 
-    if (!str) return NULL;
+    if (!str) return NULL; // returns on error.    
+    int c; 
+    while ((c = getchar()) != '\n' && c != EOF) { // =>
+        // getchar() returns an ascii code representing the next char in input.
 
-    while ((c = getchar()) != '\n' && c != EOF) {
-        str[len++] = (char)c; // casting c from int to a char.
+        str[len++] = (char)c; // casting c from int to a char. =>
+        // incrementing len only after assigning str[len] = (char)c.
 
         if (len >= size) { // re-allocation of the str memory-space on the heap.
             size *= 2;
             char* temp = realloc(str, size * sizeof(char));
             if (!temp) {
                 free(str); // freeing the original string if realloc fails.
-                return NULL;
+                return NULL; // returns on error.
             }
             str = temp;
         }
@@ -30,47 +35,88 @@ char* readline() { // RE-READ THIS CODE AGAIN.
 
 
 char** parse(char* cmdLine) {
-    // cmdLine = {'abc d efgh i'}.
-    // parsed_strs = {{'abc'}, {'d'}, {'efgh'}, {'i'}}.
-    char** parsed_strs[1024];
-    char current_char;
-    size_t current_word_index = 0;
-    size_t word_index = 0;
+    // example of operation:
+    // cmdLine = {*'abc d efgh i'}.
+    // parse(cmdline) = {*'abc', *'d', *'efgh', *'i'}.
 
-    size_t len = sizeof(cmdLine) / sizeof(cmdLine[0]);
-    for (size_t i = 0; i < len; i++) { 
-        current_char = cmdLine[i];
-        if (current_char == ' ') { 
-            current_word_index++; // moving to the next word.
-            // initializing the current word's index to - 0:
-            word_index = 0;
-            continue;
-        }
-        parsed_strs[current_word_index][word_index] = &current_char;
-        word_index++; // moving to the next char in the current word.
-    } 
+    size_t max_tokens = 4; // |command(1) + flags| = 4 (as a default reference..).
+    char** tokens = malloc(max_tokens * sizeof(char*)); 
+
+    if (!tokens) return NULL; // returns on error.
+
+    char* token = cmdLine; // manually assigning the first token to be the entire word.
     
-    // cleaning the output strings-array:
-    //---
-    for (size_t j = 0; j < current_word_index; j++) {
+    size_t current_token_count = 0; // will also be used as the overall-tokens-count.
+    
+    size_t len = strlen(cmdLine);
+    char* current_char;
 
+    int previous_was_char = 1; // used as a boolean indicator of a previous instance of char to battle the case in which -
+    // we have multiple deliminating symbols in a row.
+
+    for (size_t i = 0; i < len; i++) { // manually tokanizing cmdLine:
+        current_char = &cmdLine[i];
+        if ((*current_char == '\t') || (*current_char == '\r') || (*current_char == '\n')) {
+
+            *current_char = '\0'; // =>
+            // swapping the-('\t','\r','\n') unsigned-chars with-'\0' for standardized parsing convenience in-C/C++.
+
+            if (previous_was_char != 1) continue;
+            previous_was_char = 0;
+
+            // resizing 'tokens''s heap memory if needed:
+            //---
+            if (current_token_count >= max_tokens - 1) {
+                max_tokens *= 2;
+                char** temp = realloc(tokens, max_tokens * sizeof(char*));
+                if (!temp) { // freeing the original tokens array if realloc fails and returning 'NULL' to indicate an error:
+                    free(tokens); 
+                    return NULL; 
+                }
+                tokens = temp;
+            }
+            //---
+
+
+            tokens[current_token_count] = token; // this is a necessary re-assignment of the first pointer because of -
+            // the special case in which we never do find additional tokens (in the case of a parameterless command..).
+        
+            token = (char*)malloc(sizeof(char*)); // =>
+            // allocating memory on the heap, pointing to the next token's first char.
+
+            if (!token) return NULL; // returns on error.
+            
+            *token = *current_char; // =>
+            // assigning current_char's data to the heap-allocated address on the heap.
+            
+            current_token_count++;
+        } else {
+            if (previous_was_char == 0) {
+                tokens[current_token_count] = token; // this is a necessary re-assignment of the first pointer because of -
+                // the special case in which we never do find additional tokens (in the case of a parameterless command..).
+                
+                *token = *current_char; // =>
+                // assigning current_char's data to the heap-allocated address on the heap.
+                current_token_count++;
+            }
+            previous_was_char = 1;
+        }
     }
-    //---
-
-
+    return tokens;
+}
 
     // int size = 64;
     // int len = 0;
-    // char** tokens = malloc(size * sizeof(char*));
+    // char** tokens = malloc(size * sizeof(*tokens)); // sizeof(*tokens) = sizeof(char*).
     // char* token;
 
-    // if (!tokens) return NULL;
+    // if (!tokens) return NULL; 
 
     // token = strtok(cmdLine, " \t\r\n"); // split by spaces, tabs, carriage returns, and newlines.
     // while (token != NULL) {
     //     tokens[len++] = token;
 
-    //     if (len >= size) {
+    //     if (len >= size - 1) {
     //         size *= 2;
     //         char** temp = realloc(tokens, size * sizeof(char*));
     //         if (!temp) {
@@ -85,7 +131,7 @@ char** parse(char* cmdLine) {
     // return tokens;
 
 
-}
+//}
 
 
 

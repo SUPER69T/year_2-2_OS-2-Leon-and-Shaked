@@ -7,15 +7,28 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// taking input as a single chars-array (string). stops at - '\n':
+/**
+ * @operation: takes input as a single chars-array (string). stops at - '\n'.
+ *
+ * @param[in] None.
+ *
+ * @returns: char* info: a non-parsed, not-evaluated array of type - 'char*' - 
+ * containing both the linux-command, and it's parameters, as well as white-spaces.
+**/
 char* readline(); 
 
-// parsing the array of strings by whitespace into tokens chars-arrays (strings):
+/**
+ * @operation: parsing the array of strings by whitespaces into an array of strings.
+ *
+ * @param[in] char** info: a linux-command and it's flags / parameters.
+ *
+ * @returns: a parsed array o strings (of type - 'char**').
+**/
 char** parse(char* cmdLine); 
 
 
 /**
- * executing the parsed strings by using the execlp()-command -
+ * @operation: executing the parsed strings by using the execlp()-command -
  * forking it's process and returning the pid for error evaluation.
  *
  * @param[in] char** info: a linux-command and it's flags / parameters.
