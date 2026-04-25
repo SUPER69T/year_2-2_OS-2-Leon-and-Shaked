@@ -1,8 +1,12 @@
+#include "funcs.h"
+
+#include <errno.h>  // required for errno.
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>  // required for strerror().
 #include <string.h>
-#include "funcs.h"
+#include <sys/types.h>
+#include <unistd.h>
 
 char* readline() { 
     int size = 1024;
@@ -109,43 +113,31 @@ char** parse(char* cmdLine) {
     return tokens;
 }
 
-    // int size = 64;
-    // int len = 0;
-    // char** tokens = malloc(size * sizeof(*tokens)); // sizeof(*tokens) = sizeof(char*).
-    // char* token;
 
-    // if (!tokens) return NULL; 
+void executeCommand(char** info) {
+    execv(info[0], info);
 
-    // token = strtok(cmdLine, " \t\r\n"); // split by spaces, tabs, carriage returns, and newlines.
-    // while (token != NULL) {
-    //     tokens[len++] = token;
+    // only gets here on failure..:
+    fprintf(stderr, "Shell error: %s: %s (errno: %d).\n", info[0], strerror(errno), errno);
+    // fprintf: for sending formatted output to a specific file stream,
+    // a standard practice in shell enviroments...
+    //
+    // stderr: a separate stream from stdout, used primarily for error messages...
 
-    //     if (len >= size - 1) {
-    //         size *= 2;
-    //         char** temp = realloc(tokens, size * sizeof(char*));
-    //         if (!temp) {
-    //             free(tokens); // freeing the original tokens array if realloc fails.
-    //             return NULL;
-    //         }
-    //         tokens = temp;
-    //     }
-    //     token = strtok(NULL, " \t\r\n");
-    // }
-    // tokens[len] = NULL; // null-terminate the array of tokens.
-    // return tokens;
-
-
-//}
-
-
-
-int pwd(int token) {
-
-    execlp("pwd", "pwd", (char *)NULL); // gemini: "Casting NULL:" =>
-    //"In many environments, it is safer to cast the sentinel value: (char *)NULL"...
-    return errno; // only gets here on failure. 
+    // killing the child process immediately:
+    _exit(EXIT_FAILURE);  // =>
+    // _exit(): contrary to exit(), which is from the std c library, _exit() is a low -
+    // level system call, it does not do any cleanup or flushes buffers...
+    //
+    // GEMINI's explanation:
+    // Why use _exit() in a child process?
+    // When you fork(), the child gets a copy of the parent's memory, including the printf buffers.
+    // 1. If the child fails and calls the regular exit(), it might "flush" the parent's old data to
+    // the screen a second time.
+    // 2. This can lead to weird "double-printing" bugs in your shell's output.
+    // 3. Since the child was supposed to be replaced by execv anyway, using _exit() is the safest
+    // way to "vanish" without accidentally messing with the parent's terminal state.
 }
-
 
 // int main() {
 //     ssize_t pid;
