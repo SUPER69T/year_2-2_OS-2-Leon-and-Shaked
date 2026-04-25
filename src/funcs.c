@@ -12,6 +12,7 @@ char* readline() {
     // this is going to be useful for parse() in order to tokanize 'cmdLine'.
 
     if (!str) return NULL; // returns on error.    
+
     int c; 
     while ((c = getchar()) != '\n' && c != EOF) { // =>
         // getchar() returns an ascii code representing the next char in input.
@@ -19,6 +20,8 @@ char* readline() {
         str[len++] = (char)c; // casting c from int to a char. =>
         // incrementing len only after assigning str[len] = (char)c.
 
+        // resizing 'str''s heap memory if needed:
+        //---
         if (len >= size) { // re-allocation of the str memory-space on the heap.
             size *= 2;
             char* temp = realloc(str, size * sizeof(char));
@@ -27,6 +30,7 @@ char* readline() {
                 return NULL; // returns on error.
             }
             str = temp;
+        //---
         }
     }
     str[len] = '\0'; // null-terminate the string.
@@ -43,26 +47,30 @@ char** parse(char* cmdLine) {
     char** tokens = malloc(max_tokens * sizeof(char*)); 
 
     if (!tokens) return NULL; // returns on error.
-
-    char* token = cmdLine; // manually assigning the first token to be the entire word.
     
     size_t current_token_count = 0; // will also be used as the overall-tokens-count.
     
-    size_t len = strlen(cmdLine);
-    char* current_char;
+    size_t len = strlen(cmdLine) + 1; // => 
+    // strlen() doesn't include the '\0' at the end of 'cmdLine', which should be saved to act as the end of the last token.
 
-    int previous_was_char = 1; // used as a boolean indicator of a previous instance of char to battle the case in which -
+    char* current_char;
+    int previous_was_char = 0; // used as a boolean indicator of a previous instance of char to battle the case in which -
     // we have multiple deliminating symbols in a row.
 
     for (size_t i = 0; i < len; i++) { // manually tokanizing cmdLine:
         current_char = &cmdLine[i];
-        if ((*current_char == '\t') || (*current_char == '\r') || (*current_char == '\n')) {
+        if ((*current_char == '\t') || 
+            (*current_char == '\r') || 
+            (*current_char == '\0') || 
+            (*current_char == ' ')) { // identifying "non-chars".
 
             *current_char = '\0'; // =>
-            // swapping the-('\t','\r','\n') unsigned-chars with-'\0' for standardized parsing convenience in-C/C++.
+            // swapping the-('\t','\r','\0',' ') unsigned-chars with-'\0' for standardized parsing convenience in-C/C++.
 
-            if (previous_was_char != 1) continue;
             previous_was_char = 0;
+            continue;
+
+        } else {
 
             // resizing 'tokens''s heap memory if needed:
             //---
@@ -77,31 +85,27 @@ char** parse(char* cmdLine) {
             }
             //---
 
-
-            tokens[current_token_count] = token; // this is a necessary re-assignment of the first pointer because of -
-            // the special case in which we never do find additional tokens (in the case of a parameterless command..).
-        
-            token = (char*)malloc(sizeof(char*)); // =>
-            // allocating memory on the heap, pointing to the next token's first char.
-
-            if (!token) return NULL; // returns on error.
-            
-            *token = *current_char; // =>
-            // assigning current_char's data to the heap-allocated address on the heap.
-            
-            current_token_count++;
-        } else {
             if (previous_was_char == 0) {
-                tokens[current_token_count] = token; // this is a necessary re-assignment of the first pointer because of -
-                // the special case in which we never do find additional tokens (in the case of a parameterless command..).
+                tokens[current_token_count] = current_char; // this also accounts for the first token's occurrence.
                 
-                *token = *current_char; // =>
-                // assigning current_char's data to the heap-allocated address on the heap.
                 current_token_count++;
             }
             previous_was_char = 1;
         }
     }
+    // resizing 'tokens''s heap memory if needed:
+    //---
+    if (current_token_count >= max_tokens - 1) {
+        max_tokens += 1;
+        char** temp = realloc(tokens, max_tokens * sizeof(char*));
+        if (!temp) { // freeing the original tokens array if realloc fails and returning 'NULL' to indicate an error:
+            free(tokens); 
+            return NULL; 
+        }
+        tokens = temp;
+    }
+    //---
+    tokens[current_token_count] = NULL;
     return tokens;
 }
 
