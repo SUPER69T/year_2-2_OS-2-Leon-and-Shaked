@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dirent.h>   //} for tree() / print_tree().
+#include <sys/stat.h> //}
 
 char* readline() { 
     int size = 1024;
@@ -115,7 +117,9 @@ char** parse(char* cmdLine) {
 
 
 void executeCommand(char** info) {
-    execv(info[0], info);
+
+    execvp(info[0], info); 
+     
 
     // only gets here on failure..:
     fprintf(stderr, "Shell error: %s: %s (errno: %d).\n", info[0], strerror(errno), errno);
@@ -139,32 +143,51 @@ void executeCommand(char** info) {
     // way to "vanish" without accidentally messing with the parent's terminal state.
 }
 
-// int main() {
-//     ssize_t pid;
-//     int myPipeFD[2];
-//     int ret;
-//     char buf[40];
+void tree(){ 
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        print_tree(cwd, 0);
+    } else {
+        printf("Command error: 'tree' couldn't execute.\n");
+    }
+}
 
-//     // Create pipe
-//     ret = pipe(myPipeFD);
-//     if (ret == -1) {
-//         perror("pipe error");
-//         exit(1);
-//     }
+void print_tree(char* subpath, int level) {
+    DIR* dir = opendir(subpath);
+    if (dir == NULL) {
+        return; // Not a directory or can't open
+    }
+    
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue; // skip current and parent directory entries.
+        }
+        
+        // Print indentation (4 spaces per level)
+        for (int i = 0; i < level; i++) {
+            printf("    ");
+        }
+        
+        // Print branch symbol for non-root levels
+        if (level > 0) {
+            printf("├── ");
+        }
+        
+        printf("%s\n", entry->d_name);
 
-//     // Create child process
-//     pid = fork();
-//     if (pid == 0) {
-//         // Child process
-//         printf("bullshit1 process\n");
-//         write(myPipeFD[1], "hello , the are someone?!\n", 30);
-//     } 
-//     else {
-//         // Parent process
-//         printf("bullshit0 process\n");
-//         read(myPipeFD[0], buf, 30);
-//         printf("i am read message from buffer: %s\n", buf);
-//     }
-
-//     return 0;
-// }
+        // Check if entry is a directory using stat
+        char entry_path[1024];
+        snprintf(entry_path, sizeof(entry_path), "%s/%s", subpath, entry->d_name);
+        struct stat st;
+        int is_dir = (stat(entry_path, &st) == 0 && S_ISDIR(st.st_mode));
+        
+        if (is_dir) { // if the entry is a directory:
+            char new_subpath[1024];
+            snprintf(new_subpath, sizeof(new_subpath), "%s/%s", subpath, entry->d_name);
+            print_tree(new_subpath, level + 1); // recursive call
+        }
+    }
+    
+    closedir(dir);
+}

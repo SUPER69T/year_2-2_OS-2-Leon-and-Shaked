@@ -2,7 +2,23 @@
 #define FUNCS_H
 
 #include <sys/types.h>
+#include <dirent.h>
 #include <unistd.h>
+
+// building a map of available custom-functions:
+//---
+    typedef struct {
+    int key;
+    char* value;
+} Function;
+
+typedef struct {
+        Function* list;
+        size_t size;
+        size_t capacity;
+} Fmap;
+// this way we allow easier expansion for a list of functions into our shell.
+//---
 
 /**
  * @operation: takes stdin's input as a single chars-array (string). stops at - '\n'.
@@ -23,7 +39,6 @@ char* readline();
 **/
 char** parse(char* cmdLine); 
 
-
 /**
  * @operation: executing the parsed strings by using the execv()-command -
  * replacing the child process with a new running process of the desired command.
@@ -34,11 +49,8 @@ char** parse(char* cmdLine);
 **/
 void executeCommand(char** info);
 
-// tree(); //(opendir), (dirent.h=>readdir), (closedir), (execvp)
+void tree(); //(opendir), (dirent.h=>readdir), (closedir), (execvp)
 
-// extern char[] subpath;
-// extern int level;
-// print_tree(char[] subpath, int level);
-
+void print_tree(char* subpath, int level);
 
 #endif // FUNCS_H
