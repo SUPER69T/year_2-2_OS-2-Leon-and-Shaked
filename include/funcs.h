@@ -20,6 +20,8 @@ typedef struct {
 // this way we allow easier expansion for a list of functions into our shell.
 //---
 
+void Print2Shelly(char* word, int interval_ms, int no_newline);
+
 /**
  * @operation: takes stdin's input as a single chars-array (string). stops at - '\n'.
  *

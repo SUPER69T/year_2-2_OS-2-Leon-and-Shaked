@@ -1,5 +1,6 @@
-#include "funcs.h"
+#define _POSIX_C_SOURCE 199309L // required for nanosleep().
 
+#include "funcs.h"
 #include <errno.h>  // required for errno.
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +10,44 @@
 #include <unistd.h>
 #include <dirent.h>   //} for tree() / print_tree().
 #include <sys/stat.h> //}
+#include <unistd.h> // required for getcwd().
+#include <time.h> // required for 'timespec'-struct.
+
+
+void Print2Shelly(char* word, int interval_ms, int no_newline) { 
+    int word_len = strlen(word); 
+
+    struct timespec letter_ts, punct_ts; // =>
+    // creating two structs: one for the normal letter delay, one for punctuation.
+
+    // letter delay:
+    //---
+    letter_ts.tv_sec = interval_ms / 1000;
+    letter_ts.tv_nsec = (interval_ms % 1000) * 1000000L;
+    //---
+
+    // punctuation delay:
+    //---
+    int p_ms = interval_ms * 5;
+    punct_ts.tv_sec = p_ms / 1000;
+    punct_ts.tv_nsec = (p_ms % 1000) * 1000000L;
+    //---
+
+    for (int i = 0; i < word_len; i++) {
+        nanosleep(&letter_ts, NULL);
+
+        if (word[i] == ',' || word[i] == '.') {
+            nanosleep(&punct_ts, NULL);;
+        }
+        printf("%c", word[i]);
+        fflush(stdout); // =>
+        // previously had a bug where it felt like-Print2Shelly() combined all the sleeping -
+        // times together and simply printed at the end of the function. figured out it was -
+        // a flushing problem and that was correct, so fflush() is a necessity in this case. 
+    }
+    if (!no_newline) printf("\n");
+}
+
 
 char* readline() { 
     int size = 1024;
@@ -148,11 +187,11 @@ void tree(){
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
         print_tree(cwd, 0);
     } else {
-        printf("Command error: 'tree' couldn't execute.\n");
+        Print2Shelly("Command error: 'tree' couldn't execute.", 20, 0);
     }
 }
 
-void print_tree(char* subpath, int level) {
+void print_tree(char* subpath, int level) { // NO IDEA WTF IS GOING ON, ITS ALL AI GENERATED:
     DIR* dir = opendir(subpath);
     if (dir == NULL) {
         return; // Not a directory or can't open
