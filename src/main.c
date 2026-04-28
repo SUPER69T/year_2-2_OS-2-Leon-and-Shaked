@@ -98,7 +98,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
         ctime = localtime(&rawtime);
         char time_str[20];
         strftime(time_str, sizeof(time_str), "%H:%M:%S", ctime);
-        snprintf(buffer, sizeof(time_str),"[%s]> ", time_str);
+        snprintf(buffer, sizeof(buffer),"[%s]> ", time_str);
         Print2Shelly(buffer, 20, 1);
         //---
 
@@ -163,6 +163,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
                             break;
                         }
                         chdir(info[1]);
+                        closedir(dir);
                         break;
                     }
                     case 2: { // exit.
@@ -208,7 +209,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
                             ssize_t count;
 
                             // reading until the child-process closes it's pipe-end:
-                            while ((count = read(fds[READ], ls_buffer, sizeof(buffer) - 1)) > 0) { // =>
+                            while ((count = read(fds[READ], ls_buffer, sizeof(ls_buffer) - 1)) > 0) { // =>
                                 // count is the actual number of character the child process sent through the pipe.
                                 ls_buffer[count] = '\0';
                                 Print2Shelly(ls_buffer, 20, 0); 
@@ -219,18 +220,21 @@ int main() {  // not using: "int argc, char **argv", for this project.
                         break;
                     }
                 }
+                break; // break out of the for loop when a builtin is found
             }
-            if (found_builtin) {
-                // manual cleanup on normal child return:
-                //---
-                free(cmdLine);
-                free(info);
-                // additional safety against double-freeing of memory:
-                cmdLine = NULL;
-                info = NULL;
-                //
-                continue; // going to the next prompt.
-            }
+        }
+        
+        // handlןמע builtin cleanup and skipping fork() for builtin commands:
+        if (found_builtin) {
+            // manual cleanup on normal child return:
+            //---
+            free(cmdLine);
+            free(info);
+            // additional safety against double-freeing of memory:
+            cmdLine = NULL;
+            info = NULL;
+            //
+            continue; // going to the next prompt.
         }
         //--- 
         //
