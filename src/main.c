@@ -221,7 +221,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
                         }
                         break;
                     }
-                    case 4: { // tree 
+                    case 4: { // tree.
                         pid_t compilePid = fork();
 
                         if (compilePid == 0) {
