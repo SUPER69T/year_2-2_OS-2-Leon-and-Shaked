@@ -141,7 +141,7 @@ char** parse(char* cmdLine) {
     // resizing 'tokens''s heap memory if needed:
     //---
     if (current_token_count >= max_tokens - 1) {
-        max_tokens += 1;
+        max_tokens *= 1;
         char** temp = realloc(tokens, max_tokens * sizeof(char*));
         if (!temp) { // freeing the original tokens array if realloc fails and returning 'NULL' to indicate an error:
             free(tokens); 
@@ -191,7 +191,7 @@ void tree(){
     }
 }
 
-void print_tree(char* subpath, int level) { // NO IDEA WTF IS GOING ON, ITS ALL AI GENERATED:
+void print_tree(char* subpath, int level) { 
     DIR* dir = opendir(subpath);
     if (dir == NULL) {
         return; // Not a directory or can't open

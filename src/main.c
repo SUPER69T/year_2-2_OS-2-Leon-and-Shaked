@@ -1,10 +1,13 @@
 #define _GNU_SOURCE // required for strsignal().
+#define READ 0  //} these two are required for piping the stdout -
+#define WRITE 1 //} tunnel from the forked child-process to Print2Shelly().
+
 #include <stdlib.h>  // required for EXIT_FAILURE.
 #include <errno.h>  // required for errno.
 #include <stdio.h>
 #include <string.h>  // required for strerror().
 #include <unistd.h>
-#include <sys/wait.h>  //} these two are for waitpid().
+#include <sys/wait.h>  // requiured for waitpid().
 #include <time.h> // required for 'tm'-struct.
 
 #include "funcs.h"
@@ -27,15 +30,23 @@ void cleanup(char* cmdLine, char** info, Fmap* functions) {
 
 
 int main() {  // not using: "int argc, char **argv", for this project.
-    // input + process:
-    //size_t info_len = 0;
+
+    // using of builtin functions:
     Function* builtin_func = NULL;
-    pid_t childPid = -1;
+    int found_builtin;
+    // 
+    
+    // input:
+    //size_t info_len = 0;
     char* cmdLine = NULL;
     char** info = NULL;
     //
-    
-    // for the time printing:
+
+    // forking:
+    pid_t childPid = -1;
+    //
+
+    // for time printing:
     time_t rawtime;
     struct tm *ctime;
     char buffer[1024] = {0};
@@ -44,6 +55,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
     Function pwd = {0, "pwd"};
     Function cd = {1, "cd"};
     Function exit = {2, "exit"};
+    Function ls = {3, "ls"};
 
     Function* funclist = calloc(256, sizeof(Function)); // chose 256 for no special reason.
     if (funclist == NULL) {
@@ -55,10 +67,11 @@ int main() {  // not using: "int argc, char **argv", for this project.
     funclist[0] = pwd;
     funclist[1] = cd;
     funclist[2] = exit;
+    funclist[3] = ls;
     
     Fmap functions = {
         .list = funclist,
-        .size = 3,  
+        .size = 4,  
         .capacity = 256 
     };
     //---
@@ -73,8 +86,11 @@ int main() {  // not using: "int argc, char **argv", for this project.
     Print2Shelly("<--Starting Shelly_v1.0-->\n|------------------------|\n", 15, 0);
 
     while (1) {
+        // resets:
         errno = 0; // reset for every failed-command's errno value.
+        found_builtin = 0;
         fflush(stdout); // making sure it flushes on each iteration, just for safety.
+        //
 
         // printing default line:
         //---
@@ -98,12 +114,10 @@ int main() {  // not using: "int argc, char **argv", for this project.
 
         info = parse(cmdLine);
 
-        if (info == NULL) { // error handling for parse():
-            char error_msg[256];
-            snprintf(error_msg, sizeof(error_msg), "Shell error: %s (errno: %d).\n", strerror(errno), errno);
-            Print2Shelly(error_msg, 20, 0);
+        if (info == NULL || info[0] == NULL) { // error handling for parse():
+            if (info) free(info);
             free(cmdLine);
-            Print2Shelly("Invalid format, please try again...", 20, 0);
+            Print2Shelly("You're wasting CPU cycles for nothing...", 20, 0);
             //cleanup(cmdLine, info, info_len, &functions);
             continue;
         }
@@ -118,11 +132,12 @@ int main() {  // not using: "int argc, char **argv", for this project.
         //---
 
         // found this to be the easiest implementation of builtin functions / directory-dependant functions:
-        for (size_t i = 1; i < functions.size; i++){ 
+        for (size_t i = 0; i < functions.size; i++){ 
             if (functions.list[i].value != NULL && strcmp(functions.list[i].value, info[0]) == 0) { // found a builtin function:
                 builtin_func = &functions.list[i];
+                found_builtin = 1;
                 switch (builtin_func->key) {
-                    case 0: {// pwd.
+                    case 0: { // pwd.
                         char cwd[1024];
                         if (getcwd(cwd, sizeof(cwd)) != NULL) {
                             Print2Shelly(cwd, 20, 0);
@@ -133,22 +148,79 @@ int main() {  // not using: "int argc, char **argv", for this project.
                         }
                         break;
                     }
-                    case 1: {// cd.
+                    case 1: { // cd.
                         if (info[1] == NULL) { // no path argument passed to cd:
                             char error_msg[256];
                             snprintf(error_msg, sizeof(error_msg), "Command error: %s did not receive a path argument.\n", info[0]);
                             Print2Shelly(error_msg, 20, 0);
                             break;
                         }
+                        DIR* dir = opendir(info[1]);
+                        if (dir == NULL) { // not a directory or can't open.
+                            char error_msg[256];
+                            snprintf(error_msg, sizeof(error_msg), "Command error: %s improper path argument.\n", info[0]);
+                            Print2Shelly(error_msg, 20, 0);
+                            break;
+                        }
                         chdir(info[1]);
                         break;
                     }
-                    case 2: {// exit.
+                    case 2: { // exit.
                         Print2Shelly("goodbye...", 20, 0);
                         cleanup(cmdLine, info, &functions);
                         return 0;
                     }
+                    case 3: { // ls.
+                        // creating a pipe:
+                        int fds[2];
+                        if (pipe(fds) == -1) {
+                            Print2Shelly("Error: pipe failure...", 20, 0);
+                            break;
+                        }
+                        //
+                        
+                        childPid = fork();
+                        if (childPid == -1) { // error handling for fork():
+                            char error_msg[256];
+                            snprintf(error_msg, sizeof(error_msg), "Error forking - %s: %s (errno: %d).\n", info[0], strerror(errno), errno);
+                            Print2Shelly(error_msg, 20, 0);
+                            close(fds[0]);
+                            close(fds[1]);
+                        } 
+                        else if (childPid == 0) { // child process:
+                            dup2(fds[WRITE], STDOUT_FILENO); // =>
+                            // dup2() is redirecting standard output to the pipe's write-end.
+                            // dupe2() uses "block-buffering"...
+
+                            // closing both pipe-ends:
+                            close(fds[READ]); 
+                            close(fds[WRITE]);
+                            //
+
+                            execlp("/bin/ls", "ls", NULL);
+                            _exit(EXIT_FAILURE);
+                        } 
+                        else { // parent process:
+                            close(fds[WRITE]); // =>
+                            // closing write-end in the parent, before the parent tries to read (preventing an infinite reading loop).
+
+                            char ls_buffer[4096]; // the buffer will hold stdout's output.
+                            ssize_t count;
+
+                            // reading until the child-process closes it's pipe-end:
+                            while ((count = read(fds[READ], ls_buffer, sizeof(buffer) - 1)) > 0) { // =>
+                                // count is the actual number of character the child process sent through the pipe.
+                                ls_buffer[count] = '\0';
+                                Print2Shelly(ls_buffer, 20, 0); 
+                            }
+                            close(fds[READ]); // closing read-end.
+                            wait(NULL); // waiting for the child-process to exit.
+                        }
+                        break;
+                    }
                 }
+            }
+            if (found_builtin) {
                 // manual cleanup on normal child return:
                 //---
                 free(cmdLine);
@@ -156,8 +228,8 @@ int main() {  // not using: "int argc, char **argv", for this project.
                 // additional safety against double-freeing of memory:
                 cmdLine = NULL;
                 info = NULL;
-                //---
-                continue;
+                //
+                continue; // going to the next prompt.
             }
         }
         //--- 
@@ -173,6 +245,24 @@ int main() {  // not using: "int argc, char **argv", for this project.
             continue;
 
         } else if (childPid == 0) { // child code:
+// DEPRICATED:
+//---
+// dup2(fds[1], STDOUT_FILENO); // =>
+// // dup2() is redirecting standard output to the pipe's write-end.
+// dup2(fds[1], STDERR_FILENO);
+
+// // closing descriptors that are no longer needed:
+// close(fds[READ]); 
+// close(fds[WRITE]);
+//--- 
+// this was a cute idea to pipe all child-process std-out to Print2Shelly, but that would -
+// have introduced a new giant problem, which is restricting commands that require the use -
+// of the std-in/out in order to function normally (echo, man, less...).
+// this idea is definitely possible by adding commands to the builtins struct and manually -
+// deciding how they work/print/function by overriding and modifying their natural workflow -
+// , but would require much more time than given for this assignment because that would be like -
+// building an actual fully-functional shell...
+
             executeCommand(info);
             _exit(EXIT_FAILURE);
             
