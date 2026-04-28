@@ -51,7 +51,7 @@ char** parse(char* cmdLine);
 **/
 void executeCommand(char** info);
 
-void tree(); //(opendir), (dirent.h=>readdir), (closedir), (execvp)
+void tree();
 
 void print_tree(char* subpath, int level);
 

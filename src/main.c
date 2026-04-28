@@ -56,6 +56,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
     Function cd = {1, "cd"};
     Function exit = {2, "exit"};
     Function ls = {3, "ls"};
+    Function tree = {4, "tree"};
 
     Function* funclist = calloc(256, sizeof(Function)); // chose 256 for no special reason.
     if (funclist == NULL) {
@@ -68,10 +69,11 @@ int main() {  // not using: "int argc, char **argv", for this project.
     funclist[1] = cd;
     funclist[2] = exit;
     funclist[3] = ls;
+    funclist[4] = tree;
     
     Fmap functions = {
         .list = funclist,
-        .size = 4,  
+        .size = 5,  
         .capacity = 256 
     };
     //---
@@ -219,12 +221,45 @@ int main() {  // not using: "int argc, char **argv", for this project.
                         }
                         break;
                     }
+                    case 4: { // tree 
+                        pid_t compilePid = fork();
+
+                        if (compilePid == 0) {
+                            // Child Process: Compile tree.c into a temporary binary
+                            execlp("clang", "clang", "-std=c11", "tree.c", "-o", "tree.bin", (char *)NULL);
+                            // If execlp fails:
+                            perror("Compilation failed");
+                            _exit(EXIT_FAILURE);
+                        } else if (compilePid > 0) {
+                            // Parent Process: Wait for compilation to finish
+                            int compile_stat;
+                            waitpid(compilePid, &compile_stat, 0);
+
+                            if (WIFEXITED(compile_stat) && WEXITSTATUS(compile_stat) == 0) {
+                                // Compilation successful, now run the binary
+                                pid_t runPid = fork();
+                                if (runPid == 0) {
+                                    execlp("./tree.bin", "./tree.bin", NULL);
+                                    perror("Execution failed");
+                                    _exit(EXIT_FAILURE);
+                                } else {
+                                    waitpid(runPid, NULL, 0);
+                                    
+                                    unlink("./tree.bin"); // =>
+                                    // removing the binary after running to keep it clean.
+                                }
+                            } else {
+                                Print2Shelly("Shell error: Could not compile tree.c\n", 20, 0);
+                            }
+                        }
+                        break;
+                    }
                 }
-                break; // break out of the for loop when a builtin is found
+                break; // break out of the for loop when a builtin is found.
             }
         }
         
-        // handlןמע builtin cleanup and skipping fork() for builtin commands:
+        // handle builtin cleanup and skip fork() for builtin commands:
         if (found_builtin) {
             // manual cleanup on normal child return:
             //---
