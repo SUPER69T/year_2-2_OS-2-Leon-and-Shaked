@@ -233,7 +233,7 @@ int main() {  // not using: "int argc, char **argv", for this project.
                         } else if (compilePid > 0) {
                             // Parent Process: Wait for compilation to finish
                             int compile_stat;
-                            waitpid(compilePid, &compile_stat, 0);
+                            waitpid(compilePid, &compile_stat, options);
 
                             if (WIFEXITED(compile_stat) && WEXITSTATUS(compile_stat) == 0) {
                                 // Compilation successful, now run the binary
@@ -242,11 +242,11 @@ int main() {  // not using: "int argc, char **argv", for this project.
                                     execlp("./tree.bin", "./tree.bin", NULL);
                                     perror("Execution failed");
                                     _exit(EXIT_FAILURE);
-                                } else {
+                                } else { // parent:
                                     waitpid(runPid, NULL, 0);
                                     
                                     unlink("./tree.bin"); // =>
-                                    // removing the binary after running to keep it clean.
+                                    // removing the binary after running to keep the directory clean.
                                 }
                             } else {
                                 Print2Shelly("Shell error: Could not compile tree.c\n", 20, 0);
