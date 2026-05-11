@@ -30,7 +30,7 @@ void Print2Shelly(char* word, int interval_ms, int no_newline);
  * @returns: char* info: a non-parsed, not-evaluated array of type - 'char*' - 
  * containing both the linux-command, and it's parameters, as well as: ('\t','\r','\0',' ').
 **/
-char* readline(); 
+char* readline(void); 
 
 /**
  * @operation: tokenizing the array of strings into an array of tokens (first char's pointers).
@@ -50,8 +50,6 @@ char** parse(char* cmdLine);
  * @return: void.
 **/
 void executeCommand(char** info);
-
-void tree();
 
 void print_tree(char* subpath, int level);
 

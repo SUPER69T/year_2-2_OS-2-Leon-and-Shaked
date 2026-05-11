@@ -4,9 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>  // required for strerror().
-#include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <unistd.h> // required for getcwd().
 #include <time.h> // required for 'timespec'-struct.
 
@@ -48,7 +46,7 @@ void Print2Shelly(char* word, int interval_ms, int no_newline) {
 }
 
 
-char* readline() { 
+char* readline(void) { 
     int size = 1024;
     int len = 0;
     char* str = malloc(size * sizeof(char)); // =>

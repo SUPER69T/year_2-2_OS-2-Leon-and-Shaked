@@ -1,4 +1,18 @@
+---
+# adding this line defines language-specific clang-format configurations:
+# the 'Language: Cpp'-enum is defined for: C, C++, Objective-C:
+Language: Cpp
 BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 100
-AllowShortFunctionsOnASingleLine: None
+
+# force pointers (symbols) to stick to the type:
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# allows defining a template function in a single line:
+AlwaysBreakTemplateDeclarations: No
+
+# allows defining Inline or short functions in a single line:
+AllowShortFunctionsOnASingleLine: Inline
+...

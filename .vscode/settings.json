@@ -4,14 +4,20 @@
     "*.hpp": "cpp"
   },
   "editor.semanticHighlighting.enabled": true,
-  "C_Cpp.intelliSenseEngine": "disabled",
-  
+  "C_Cpp.intelliSenseEngine": "disabled"
+
   // Improves clangd behavior
   "clangd.arguments": [
-    "--compile-commands-dir=.",
-    "--header-insertion=never",
-    "--completion-style=detailed",
-    "--background-index", // Project-wide awareness, but can be slow on large projects.
+    "--background-index", // project-wide awareness, but can be slow on large projects.
+    "--clang-tidy", // inside-editor clang's linting-tool.
+    "--header-insertion=iwyu", // auto-includes used header-files.
+    "--compile-commands-dir=.", // provides the directory of the compile_flag.txt/compile_commands.txt.
+    "--function-arg-placeholders", // auto-completes function name+parameter types+names on TAB. =>
+    // add '=0' to disable.
+    "--completion-style=detailed", // better completion for overloaded functions + some additional stuff...
+    "--fallback-style=clang",
+    "-j=4" // number of threads assigned to run the clang-linter server. on large-projects, each job =>
+    // MIGHT require 2GB ram.
   ],
   "clangd.fallbackFlags": [
     "-std=c++17",

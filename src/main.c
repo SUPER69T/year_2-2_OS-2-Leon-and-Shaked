@@ -29,7 +29,9 @@ void cleanup(char* cmdLine, char** info, Fmap* functions) {
 }
 
 
-int main() {  // not using: "int argc, char **argv", for this project.
+int main(int argc, char **argv) { // the strict way of receiving no arguments in C:
+    (void)argc;
+    (void)argv;
 
     // using of builtin functions:
     Function* builtin_func = NULL;

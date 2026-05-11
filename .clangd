@@ -1,0 +1,30 @@
+# This file configures the clangd language server's internal behavior.
+# It does NOT tell the compiler how to build your code; it tells the linter how to critique it.
+
+Diagnostics:
+  ClangTidy:
+    Add: 
+      # Enforces modern C++ standards (e.g., using auto, nullptr over NULL):
+      - modernize-*
+      # Catches logic errors that compile fine but cause runtime crashes (e.g., use-after-free):
+      - bugprone-*
+      # Flags inefficient code (e.g., passing large objects by value instead of const reference):
+      - performance-*
+      # Detects memory leaks and pointer mismanagement:
+      - memory-*
+      # Enforces naming conventions and code clarity:
+      - readability-*
+    Remove: 
+      # Disables the rule forcing 'auto func() -> void' syntax, which is visually noisy:
+      - modernize-use-trailing-return-type 
+      # Disables warnings for using numbers directly in code (common in bit-shifting/low-level math):
+      - readability-magic-numbers        
+      # Disables warnings for short variable names (like 'i' in loops):
+      - readability-identifier-length
+
+  # Forces clangd to flag any #include that isn't actively used in the file:
+  UnusedIncludes: Strict
+
+Hover:
+  # When you hover over an 'auto' variable, it shows the deduced underlying type:
+  ShowAKA: Yes

@@ -1,18 +1,19 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
         {
-            "name": "Debug Main",
+            "name": "Debug (or Run) Main",
             "type": "cppdbg",
             "request": "launch",
-            // Points to the actual executable name from the Makefile:
-            "program": "${workspaceFolder}/main",
+            // change executable's filename if the original file's executable changed (from-'main'):
+            "program": "${workspaceFolder}/main", // => 
+            // points to the actual executable name from the Makefile.
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true, // change to 'false' if annoying.
+            "externalConsole": false, // where the debugger runs:
+            // 'false': directly in the terminal, 'true': spawns a new terminal window.
             "MIMode": "gdb",
             "setupCommands": [
                 {

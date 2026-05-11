@@ -1,0 +1,22 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-Iinclude",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-Wshadow",
+      "-Wconversion",
+      "-pedantic",
+      "-g",
+      "-c",
+      "-o",
+      "src/funcs.o",
+      "src/funcs.c"
+    ],
+    "directory": "/home/Leon_wsl_debian/school_cs_projects/year_2-2/operating_systems/OS_Assignment_2",
+    "file": "/home/Leon_wsl_debian/school_cs_projects/year_2-2/operating_systems/OS_Assignment_2/src/funcs.c",
+    "output": "/home/Leon_wsl_debian/school_cs_projects/year_2-2/operating_systems/OS_Assignment_2/src/funcs.o"
+  }
+]
